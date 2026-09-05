@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pancasila Hero Quest</title>
+<style>
+body{margin:0;font-family:Arial,sans-serif;background:#121212;color:#fff}
+.screen{padding:20px;max-width:1000px;margin:auto}
+.card{background:#1f1f1f;padding:15px;border-radius:12px;margin:10px 0}
+input,select,button{padding:10px;border-radius:8px;border:none}
+button{background:#ff9800;color:#fff;font-weight:bold;cursor:pointer}
+.top{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.stat{background:#222;padding:10px;border-radius:10px;text-align:center}
+.heroes{display:flex;flex-wrap:wrap;gap:10px}
+.hero{background:#2b2b2b;padding:10px;border-radius:8px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center}
+.modalbox{background:#1e1e1e;padding:20px;border-radius:12px;max-width:700px;width:90%}
+.option{background:#333;padding:10px;margin:8px 0;border-radius:8px;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div id="start" class="screen">
+<h1>🎮 Pancasila Hero Quest</h1>
+<div class="card">
+<input id="player" placeholder="Nama pemain"><br><br>
+<button onclick="startGame()">Mulai Petualangan</button>
+</div>
+</div>
+
+<div id="game" class="screen" style="display:none">
+<div class="top">
+<div class="stat">Level<br><b id="level">1</b></div>
+<div class="stat">Dana<br><b id="money">0</b></div>
+<div class="stat">XP<br><b id="xp">0</b></div>
+<div class="stat">Hero<br><b id="heroCount">0</b></div>
+<div class="stat">Musuh<br><b id="enemy">500</b></div>
+</div>
+
+<div class="card">
+<h2 id="story">Level 1 - Sidang Pertama BPUPKI</h2>
+<p id="monster">👹 Monster Kebodohan (500)</p>
+</div>
+
+<div class="card">
+<h3>Tim Hero</h3>
+<div id="heroes" class="heroes"></div>
+<p>Total Power: <b id="power">0</b></p>
+</div>
+
+<button onclick="openQuiz()">💰 Cari Dana</button>
+<button onclick="openShop()">🛒 Toko Hero</button>
+<button onclick="attack()">⚔️ Serang</button>
+</div>
+
+<div id="modal" class="modal">
+<div class="modalbox">
+<div id="modalContent"></div>
+<button onclick="closeModal()">Tutup</button>
+</div>
+</div>
+
+<script>
+let state={level:1,money:0,xp:0,heroes:[],enemy:500};
+
+const levelInfo={
+1:{name:"Sidang Pertama BPUPKI",enemy:500},
+2:{name:"Panitia Sembilan & Piagam Jakarta",enemy:1200},
+3:{name:"Sidang PPKI & Pengesahan Pancasila",enemy:2500}
+};
+
+const heroes=[
+{name:"Mohammad Yamin",power:100,price:200},
+{name:"Soepomo",power:150,price:300},
+{name:"Ir. Soekarno",power:200,price:400},
+{name:"Moh. Hatta",power:250,price:500},
+{name:"A.A. Maramis",power:300,price:600},
+{name:"Ki Bagus Hadikusumo",power:450,price:900}
+];
+
+const questions=[
+{level:1,q:"BPUPKI dibentuk pada tanggal?",o:["29 April 1945","1 Juni 1945","17 Agustus 1945","22 Juni 1945"],a:"29 April 1945"},
+{level:1,q:"Ketua BPUPKI adalah?",o:["Soekarno","Hatta","Radjiman Wedyodiningrat","Yamin"],a:"Radjiman Wedyodiningrat"},
+{level:1,q:"Sidang pertama BPUPKI berlangsung?",o:["29 Mei–1 Juni 1945","10–17 Juli 1945","18 Agustus 1945","22 Juni 1945"],a:"29 Mei–1 Juni 1945"},
+{level:1,q:"Pengusul pertama dasar negara?",o:["Yamin","Soepomo","Hatta","Maramis"],a:"Yamin"},
+{level:1,q:"Istilah Pancasila diperkenalkan oleh?",o:["Soekarno","Yamin","Hatta","Soepomo"],a:"Soekarno"},
+
+{level:2,q:"Panitia Sembilan beranggotakan?",o:["7","8","9","10"],a:"9"},
+{level:2,q:"Piagam Jakarta disusun oleh?",o:["PPKI","Panitia Sembilan","KNIP","MPR"],a:"Panitia Sembilan"},
+{level:2,q:"Ketua Panitia Sembilan?",o:["Soekarno","Hatta","Yamin","Maramis"],a:"Soekarno"},
+{level:2,q:"Piagam Jakarta tanggal?",o:["22 Juni 1945","1 Juni 1945","18 Agustus 1945","17 Agustus 1945"],a:"22 Juni 1945"},
+{level:2,q:"Panitia Sembilan dibentuk setelah?",o:["Sidang I BPUPKI","PPKI","Proklamasi","KNIP"],a:"Sidang I BPUPKI"},
+
+{level:3,q:"PPKI singkatan dari?",o:["Panitia Persiapan Kemerdekaan Indonesia","Panitia Pembela Kemerdekaan Indonesia","Panitia Persatuan","Panitia Perumus"],a:"Panitia Persiapan Kemerdekaan Indonesia"},
+{level:3,q:"Sidang pertama PPKI?",o:["18 Agustus 1945","17 Agustus 1945","22 Juni 1945","1 Juni 1945"],a:"18 Agustus 1945"},
+{level:3,q:"Presiden pertama RI?",o:["Soekarno","Hatta","Yamin","Soepomo"],a:"Soekarno"},
+{level:3,q:"Wakil Presiden pertama RI?",o:["Hatta","Yamin","Maramis","Wahid Hasyim"],a:"Hatta"},
+{level:3,q:"Perubahan sila pertama untuk menjaga?",o:["Persatuan","Ekonomi","Pendidikan","Budaya"],a:"Persatuan"}
+];
+
+function startGame(){
+document.getElementById('start').style.display='none';
+document.getElementById('game').style.display='block';
+update();
+}
+
+function update(){
+levelInfo[state.level] && (document.getElementById('story').innerText='Level '+state.level+' - '+levelInfo[state.level].name);
+document.getElementById('money').innerText=state.money;
+document.getElementById('xp').innerText=state.xp;
+document.getElementById('level').innerText=state.level;
+document.getElementById('enemy').innerText=state.enemy;
+document.getElementById('heroCount').innerText=state.heroes.length;
+
+let total=state.heroes.reduce((s,h)=>s+h.power,0);
+document.getElementById('power').innerText=total;
+
+let h=document.getElementById('heroes');
+h.innerHTML='';
+state.heroes.forEach(x=>h.innerHTML+=`<div class="hero">${x.name}<br>⚡${x.power}</div>`);
+}
+
+function modal(html){
+document.getElementById('modal').style.display='flex';
+document.getElementById('modalContent').innerHTML=html;
+}
+function closeModal(){document.getElementById('modal').style.display='none';}
+
+function openQuiz(){
+let qs=questions.filter(q=>q.level===state.level);
+let q=qs[Math.floor(Math.random()*qs.length)];
+let html=`<h3>${q.q}</h3>`;
+q.o.forEach(o=>html+=`<div class="option" onclick="answer('${o}','${q.a}')">${o}</div>`);
+modal(html);
+}
+
+function answer(sel,ans){
+if(sel===ans){
+let reward=200;
+state.money+=reward;
+state.xp+=10;
+modal(`<h2>Benar!</h2><p>+Rp${reward} +10 XP</p>`);
+}else{
+modal(`<h2>Salah!</h2>`);
+}
+update();
+}
+
+function openShop(){
+let html='<h2>Toko Hero</h2>';
+heroes.forEach((h,i)=>{
+html+=`<div class="hero">${h.name} ⚡${h.power} 💰${h.price}
+<button onclick="buy(${i})">Beli</button></div>`;
+});
+modal(html);
+}
+
+function buy(i){
+let h=heroes[i];
+if(state.money<h.price){alert('Dana tidak cukup');return;}
+if(state.heroes.length>=5){alert('Maksimal 5 hero');return;}
+state.money-=h.price;
+state.heroes.push(h);
+update();
+}
+
+function attack(){
+let total=state.heroes.reduce((s,h)=>s+h.power,0);
+if(total>=state.enemy){
+alert('Monster dikalahkan!');
+state.xp+=100;
+state.level++;
+if(state.level<=3){
+state.enemy=levelInfo[state.level].enemy;
+}else{
+saveScore();
+alert('SELAMAT! Anda menamatkan Pancasila Hero Quest.');
+}
+update();
+}else{
+alert('Power tim belum cukup!');
+}
+}
+
+function saveScore(){
+let name=document.getElementById('player').value||'Pemain';
+let data=JSON.parse(localStorage.getItem('phq')||'[]');
+data.push({name,xp:state.xp});
+localStorage.setItem('phq',JSON.stringify(data));
+}
+</script>
+</body>
+</html>
